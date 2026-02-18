@@ -16,4 +16,9 @@ class Agent extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function pilgrims()
+    {
+        return $this->hasMany(Pilgrim::class);
+    }
 }

@@ -57,7 +57,7 @@
                     <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
                 </td>
                 <td class="px-6 py-4 text-right">
-                    <a href="#" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs uppercase tracking-wide">View Details</a>
+                    <a href="{{ route('agents.show', $agent->id) }}" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs uppercase tracking-wide">View Details</a>
                 </td>
             </tr>
             @endforeach

@@ -24,9 +24,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('packages/{package}/manifest', [\App\Http\Controllers\PackageController::class, 'exportManifest'])->name('packages.manifest');
 
     Route::get('logs', App\Http\Controllers\ActivityLogController::class)->name('logs.index');
+    Route::get('/transactions/{transaction}/invoice', [TransactionController::class, 'invoice'])->name('transactions.invoice');
     Route::resource('transactions', TransactionController::class);
     Route::resource('agents', AgentController::class);
     Route::get('finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
+    Route::get('finance/export', [FinanceController::class, 'export'])->name('finance.export');
     Route::get('finance', [FinanceController::class, 'index'])->name('finance.index');
     Route::post('payments', [FinanceController::class, 'store'])->name('payments.store');
 

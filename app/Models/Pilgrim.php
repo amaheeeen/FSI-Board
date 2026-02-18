@@ -16,4 +16,9 @@ class Pilgrim extends Model
     {
         return $this->belongsTo(Transaction::class);
     }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
+    }
 }

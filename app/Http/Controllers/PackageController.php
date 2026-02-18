@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Package;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class PackageController extends Controller
 {
@@ -12,17 +13,27 @@ class PackageController extends Controller
      */
     public function index()
     {
-        // Eager load transactions to calculate quota in the view/resource
+        // ... (lines 14-17)
         $packages = Package::with(['transactions'])->latest()->get();
         return view('packages.index', compact('packages'));
     }
 
+    // ... (lines 20-26)
+    
+    /**
+     * Show the form for creating a new resource.
+     */
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        return view('packages.create');
+        // Fetch distinct history for autocomplete
+        $hotelsMakkah = Package::select('hotel_makkah')->distinct()->whereNotNull('hotel_makkah')->pluck('hotel_makkah');
+        $hotelsMadinah = Package::select('hotel_madinah')->distinct()->whereNotNull('hotel_madinah')->pluck('hotel_madinah');
+        $airlines = Package::select('airlines')->distinct()->whereNotNull('airlines')->pluck('airlines');
+
+        return view('packages.create', compact('hotelsMakkah', 'hotelsMadinah', 'airlines'));
     }
 
     public function store(Request $request)
@@ -35,11 +46,61 @@ class PackageController extends Controller
             'duration_days' => 'required|integer',
             'departure_date' => 'required|date',
             'quota' => 'required|integer',
+            'hotel_makkah' => 'nullable|string|max:255',
+            'hotel_madinah' => 'nullable|string|max:255',
+            'airlines' => 'nullable|string|max:255',
         ]);
 
+        // Calculate return_date
+        $departure = Carbon::parse($validated['departure_date']);
+        $days = (int) $validated['duration_days'];
+        // Standard usage: 9 Days Package -> Return on 9th day.
+        $validated['return_date'] = $departure->copy()->addDays($days - 1);
+        
         Package::create($validated);
 
         return redirect()->route('packages.index')->with('success', 'Package created successfully.');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Package $package)
+    {
+        // Fetch distinct history for autocomplete
+        $hotelsMakkah = Package::select('hotel_makkah')->distinct()->whereNotNull('hotel_makkah')->pluck('hotel_makkah');
+        $hotelsMadinah = Package::select('hotel_madinah')->distinct()->whereNotNull('hotel_madinah')->pluck('hotel_madinah');
+        $airlines = Package::select('airlines')->distinct()->whereNotNull('airlines')->pluck('airlines');
+
+        return view('packages.edit', compact('package', 'hotelsMakkah', 'hotelsMadinah', 'airlines'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Package $package)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'price_quad' => 'required|numeric',
+            'price_triple' => 'required|numeric',
+            'price_double' => 'required|numeric',
+            'duration_days' => 'required|integer',
+            'departure_date' => 'required|date',
+            'quota' => 'required|integer',
+            'hotel_makkah' => 'nullable|string|max:255',
+            'hotel_madinah' => 'nullable|string|max:255',
+            'airlines' => 'nullable|string|max:255',
+        ]);
+
+        // Calculate return_date
+        $departure = Carbon::parse($validated['departure_date']);
+        $days = (int) $validated['duration_days'];
+        $validated['return_date'] = $departure->copy()->addDays($days - 1);
+
+        $package->update($validated);
+
+        return redirect()->route('packages.index')->with('success', 'Package updated successfully.');
     }
 
     /**
@@ -98,18 +159,7 @@ class PackageController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
-    {
-        //
-    }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
 
     /**
      * Remove the specified resource from storage.

@@ -74,7 +74,8 @@
         <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
                 <tr>
-                    <th class="px-6 py-3">Name / NIK</th>
+                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">NIK</th>
                     <th class="px-6 py-3">Passport</th>
                     <th class="px-6 py-3">Agent</th>
                     <th class="px-6 py-3">City</th>
@@ -85,31 +86,27 @@
             <tbody class="divide-y divide-gray-100">
                 @foreach($pilgrims as $pilgrim)
                 <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                        <div class="font-medium text-gray-900">{{ $pilgrim->name }}</div>
-                        <div class="text-xs text-gray-400">{{ $pilgrim->nik }}</div>
-                    </td>
+                    <td class="px-6 py-4 font-medium text-gray-900">{{ $pilgrim->full_name }}</td>
+                    <td class="px-6 py-4 text-gray-500">{{ $pilgrim->nik }}</td>
                     <td class="px-6 py-4 font-mono text-emerald-700">{{ $pilgrim->passport_number }}</td>
                     <td class="px-6 py-4">
-                        @if($pilgrim->agent)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {{ $pilgrim->agent->name }}
-                            </span>
-                        @else
-                            <span class="text-gray-400">-</span>
-                        @endif
+                        {{ $pilgrim->agent->name ?? '-' }}
                     </td>
                     <td class="px-6 py-4">{{ $pilgrim->city }}</td>
                     <td class="px-6 py-4">
                         <span class="px-2 py-1 rounded-full text-xs font-semibold 
                             {{ $pilgrim->status == 'departed' ? 'bg-purple-100 text-purple-700' : 
                                ($pilgrim->status == 'visa_issued' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700') }}">
-                            {{ ucfirst(str_replace('_', ' ', $pilgrim->status)) }}
+                            {{ ucfirst(str_replace('_', ' ', $pilgrim->status ?? 'Active')) }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-right space-x-2">
-                        <a href="#" class="text-indigo-600 hover:text-indigo-900 font-medium">Detail</a>
-                        <button class="text-red-600 hover:text-red-900 font-medium">Del</button>
+                    <td class="px-6 py-4 text-right space-x-2 flex justify-end items-center">
+                        <a href="{{ route('pilgrims.show', $pilgrim->id) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">Detail</a>
+                        <form action="{{ route('pilgrims.destroy', $pilgrim->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this data?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 hover:text-red-900 font-medium ml-2">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach

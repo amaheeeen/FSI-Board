@@ -73,4 +73,8 @@ class FinanceController extends Controller
 
         return back()->with('success', 'Payment recorded successfully.');
     }
+    public function export()
+    {
+        return (new \App\Exports\FinanceReportExport)->download();
+    }
 }

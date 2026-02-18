@@ -51,9 +51,10 @@ class AgentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Agent $agent)
     {
-        //
+        $agent->load(['pilgrims.transaction.package']);
+        return view('agents.show', compact('agent'));
     }
 
     /**

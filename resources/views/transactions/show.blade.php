@@ -84,38 +84,52 @@
                 </form>
                 @endif
 
-                <!-- Payments Table -->
                 <table class="w-full text-left text-sm">
                     <thead>
                         <tr class="text-gray-500 border-b border-gray-100">
                             <th class="pb-3">Date</th>
                             <th class="pb-3">Method</th>
                             <th class="pb-3 text-right">Amount</th>
+                            <th class="pb-3 text-center">Proof</th>
                             <th class="pb-3 text-right">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @foreach($transaction->payments as $payment)
+                        @forelse($transaction->payments as $payment)
                         <tr>
                             <td class="py-3">{{ $payment->payment_date->format('d M Y') }}</td>
                             <td class="py-3">{{ $payment->payment_method }}</td>
                             <td class="py-3 text-right font-mono text-emerald-700 font-bold">+ {{ number_format($payment->amount_paid) }}</td>
+                            <td class="py-3 text-center">
+                                @if($payment->proof_of_payment)
+                                    <a href="{{ asset('storage/' . $payment->proof_of_payment) }}" target="_blank" class="text-blue-600 hover:text-blue-800 underline text-xs">View</a>
+                                @else
+                                    <span class="text-gray-400 text-xs">-</span>
+                                @endif
+                            </td>
                             <td class="py-3 text-right">
-                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Verified</span>
+                                <span class="text-xs px-2 py-1 rounded-full 
+                                    {{ $payment->status == 'Verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ $payment->status }}
+                                </span>
                             </td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="5" class="py-4 text-center text-gray-500 italic">Belum ada pembayaran.</td>
+                        </tr>
+                        @endforelse
                     </tbody>
                     <tfoot class="border-t border-gray-200">
                         <tr>
                             <td colspan="2" class="pt-4 font-bold text-right text-gray-600">Total Paid</td>
                             <td class="pt-4 text-right font-bold text-gray-900 text-lg">{{ number_format($transaction->payments->sum('amount_paid')) }}</td>
-                            <td></td>
+                            <td colspan="2"></td>
                         </tr>
                         <tr>
                             <td colspan="2" class="font-bold text-right text-red-500">Remaining</td>
                             <td class="text-right font-bold text-red-500 text-lg">{{ number_format($transaction->total_amount - $transaction->payments->sum('amount_paid')) }}</td>
-                            <td></td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>

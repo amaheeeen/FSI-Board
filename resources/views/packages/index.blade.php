@@ -34,15 +34,43 @@
                     </span>
                 </div>
                 <!-- Progress Bar -->
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div class="bg-emerald-600 h-2.5 rounded-full" style="width: {{ min(($package->transactions_count / $package->quota) * 100, 100) }}%"></div>
+                <!-- Progress Bar & Scarcity Logic -->
+                @php
+                    $percentage = ($package->transactions_count / $package->quota) * 100;
+                    $remaining = $package->quota - $package->transactions_count;
+                    // Colors: Green if safe, Yellow if warning (<20 seats), Red if critical (<10 seats)
+                    // Or percentage based? Let's stick to simple "Available" logic.
+                    // If remaining > 20 => Green. < 10 => Red.
+                    $colorClass = 'bg-emerald-500';
+                    if($remaining < 10) $colorClass = 'bg-red-500';
+                    elseif($remaining < 20) $colorClass = 'bg-yellow-500';
+                @endphp
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                    <div class="{{ $colorClass }} h-2.5 rounded-full transition-all duration-1000" style="width: {{ min($percentage, 100) }}%"></div>
                 </div>
+                
+                @if($package->hotel_makkah || $package->airlines)
+                <div class="mt-3 pt-3 border-t border-dashed border-gray-200 text-xs text-gray-500">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        <span class="truncate">{{ $package->hotel_makkah ?: 'Hotel -' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        <span class="truncate">{{ $package->airlines ?: 'Airline -' }}</span>
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
         <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
             <a href="{{ route('packages.show', $package) }}" class="text-emerald-600 font-medium hover:text-emerald-800 text-sm">View Details →</a>
             @if($package->status == 'upcoming')
-                <button class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg></button>
+                <a href="{{ route('packages.edit', $package->id) }}" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                </a>
             @endif
         </div>
     </div>
