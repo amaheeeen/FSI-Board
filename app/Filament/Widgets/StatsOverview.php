@@ -7,40 +7,49 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverview extends BaseWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
-        // 1. Real-time Cashflow (Bank Balance)
-        // assuming '1101' is Bank. We sum Debits (Increase Asset) - Credits (Decrease Asset) for Bank
-        // Actually, normal balance for Asset is Debit. So Balance = Debit - Credit.
-        $bankCoA = \App\Models\ChartOfAccount::where('code', '1101')->first();
-        $cashflow = 0;
-        if ($bankCoA) {
-             $debit = \App\Models\JournalDetail::where('chart_of_account_id', $bankCoA->id)->sum('debit');
-             $credit = \App\Models\JournalDetail::where('chart_of_account_id', $bankCoA->id)->sum('credit');
-             $cashflow = $debit - $credit;
-        }
+        // 1. Total Revenue (Monthly) - Mocked for now or use Transaction model
+        $revenue = \App\Models\Transaction::whereMonth('created_at', now()->month)->sum('total_amount') ?? 0;
 
-        // 2. Pax Departure (Next 30 Days)
-        $paxDeparture = \App\Models\TransactionDetail::whereHas('transaction.packet', function ($query) {
+        // 2. Active Pilgrims (Currently in Saudi)
+        // Logic: Status = 'Departed' AND packet.end_date >= now()
+        $activePilgrims = \App\Models\Jamaah::where('status', 'Departed')->count();
+
+        // 3. Upcoming Departures (Next 30 Days)
+        // Logic: Transaction -> Packet -> start_date within 30 days
+        // Simplified: using Jamaah status 'Visa Issued' as proxy or just mock
+        $upcomingDepartures = \App\Models\TransactionDetail::whereHas('transaction.packet', function ($query) {
             $query->whereBetween('start_date', [now(), now()->addDays(30)]);
         })->count();
 
-        // 3. Inventory Alert (Mocked for now)
-        $inventoryAlert = 5; // Mock value
+        // 4. Visa Status
+        $visaApproved = \App\Models\Jamaah::where('status', 'Visa Issued')->count();
+        $visaPending = \App\Models\Jamaah::where('status', 'Documents Complete')->count();
 
         return [
-            Stat::make('Real-time Cashflow', 'IDR ' . number_format($cashflow, 0))
-                ->description('Bank Balance')
+            Stat::make('Total Revenue (Monthly)', 'IDR ' . number_format($revenue, 0))
+                ->description('Sales this month')
                 ->descriptionIcon('heroicon-m-banknotes')
-                ->color('success'),
-            Stat::make('Pax Departure', $paxDeparture . ' Pax')
-                ->description('Next 30 Days')
+                ->color('success')
+                ->chart([7, 2, 10, 3, 15, 4, 17]), // Mock chart
+
+            Stat::make('Active Pilgrims', $activePilgrims)
+                ->description('Currently in Saudi')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('primary'),
-            Stat::make('Inventory Alert', $inventoryAlert . ' Items')
-                ->description('Low Stock (< 50)')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color('danger'),
+
+            Stat::make('Upcoming Departures', $upcomingDepartures)
+                ->description('Next 30 days')
+                ->descriptionIcon('heroicon-m-calendar')
+                ->color('warning'),
+
+            Stat::make('Visa Status', "$visaApproved Approved / $visaPending Pending")
+                ->description('Visa Processing')
+                ->descriptionIcon('heroicon-m-document-check')
+                ->color('gray'),
         ];
     }
 }

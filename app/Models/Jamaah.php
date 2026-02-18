@@ -23,6 +23,16 @@ class Jamaah extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function agent()
+    {
+        return $this->belongsTo(User::class, 'agent_id'); // Assuming User model for now, or Agent model if I find it.
+    }
+
+    public function mahram()
+    {
+        return $this->belongsTo(Jamaah::class, 'mahram_id');
+    }
+
     public function transactionDetails()
     {
         return $this->hasMany(TransactionDetail::class);

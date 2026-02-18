@@ -22,7 +22,9 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
+        'avatar',
         'password',
         'role',
     ];
@@ -48,6 +50,15 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar && file_exists(storage_path('app/public/' . $this->avatar))) {
+            return asset('storage/' . $this->avatar);
+        }
+
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=059669&color=fff';
     }
 
     public function canAccessPanel(Panel $panel): bool

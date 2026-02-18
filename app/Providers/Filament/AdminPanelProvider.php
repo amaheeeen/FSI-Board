@@ -23,20 +23,29 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->navigationGroups([
-                'Marketplace',
-                'Finance',
-                'Operations',
-                'CRM',
-                'Settings',
-            ])
+            ->default()
             ->id('admin')
             ->path('admin')
             ->login()
-            ->viteTheme('resources/css/app.css')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Emerald,
+                'gold' => Color::Amber, // Custom color for Gold accents
             ])
+            ->navigationGroups([
+                'Dashboard',
+                'CRM',
+                'Transaksi & Paket',
+                'Keagenan',
+                'Inventory',
+                'Keuangan',
+                'HRIS',
+                'Operations',
+                'Settings',
+                'Pengaturan',
+            ])
+            ->font('Inter')
+            ->favicon(asset('images/favicon.png'))
+            ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -60,6 +69,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->viteTheme('resources/css/app.css');
     }
 }
