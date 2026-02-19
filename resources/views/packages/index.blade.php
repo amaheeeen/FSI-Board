@@ -33,21 +33,19 @@
                         {{ $package->available_quota }} / {{ $package->quota }}
                     </span>
                 </div>
-                <!-- Progress Bar -->
-                <!-- Progress Bar & Scarcity Logic -->
+                <!-- HeroUI Progress Bar -->
                 @php
-                    $percentage = ($package->transactions_count / $package->quota) * 100;
                     $remaining = $package->quota - $package->transactions_count;
-                    // Colors: Green if safe, Yellow if warning (<20 seats), Red if critical (<10 seats)
-                    // Or percentage based? Let's stick to simple "Available" logic.
-                    // If remaining > 20 => Green. < 10 => Red.
                     $colorClass = 'bg-emerald-500';
                     if($remaining < 10) $colorClass = 'bg-red-500';
                     elseif($remaining < 20) $colorClass = 'bg-yellow-500';
                 @endphp
-                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                    <div class="{{ $colorClass }} h-2.5 rounded-full transition-all duration-1000" style="width: {{ min($percentage, 100) }}%"></div>
-                </div>
+                <x-hero-progress 
+                    label="Available Quota" 
+                    :value="$package->transactions_count" 
+                    :maxValue="$package->quota" 
+                    :color="$colorClass" 
+                />
                 
                 @if($package->hotel_makkah || $package->airlines)
                 <div class="mt-3 pt-3 border-t border-dashed border-gray-200 text-xs text-gray-500">

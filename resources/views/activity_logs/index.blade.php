@@ -1,11 +1,39 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="mb-6 flex justify-between items-center">
+<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
         <h1 class="text-2xl font-bold text-gray-800">System Logs (Audit Trail)</h1>
         <p class="text-gray-500 text-sm">Monitor all system activities and user actions.</p>
     </div>
+
+    <form method="GET" action="{{ route('logs.index') }}" class="flex flex-col md:flex-row gap-3">
+        <!-- Admin Filter -->
+        <select name="admin_id" onchange="this.form.submit()" class="px-4 py-2 rounded-xl bg-gray-50 border-none shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,1)] focus:ring-2 focus:ring-emerald-500 text-sm text-gray-700">
+            <option value="">All Admins</option>
+            @foreach($users as $user)
+                <option value="{{ $user->id }}" {{ request('admin_id') == $user->id ? 'selected' : '' }}>
+                    {{ $user->name }}
+                </option>
+            @endforeach
+        </select>
+
+        <!-- Action Filter -->
+        <select name="action_type" onchange="this.form.submit()" class="px-4 py-2 rounded-xl bg-gray-50 border-none shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,1)] focus:ring-2 focus:ring-emerald-500 text-sm text-gray-700">
+            <option value="">All Actions</option>
+            @foreach($actions as $action)
+                <option value="{{ $action }}" {{ request('action_type') == $action ? 'selected' : '' }}>
+                    {{ ucfirst($action) }}
+                </option>
+            @endforeach
+        </select>
+        
+        @if(request()->hasAny(['admin_id', 'action_type']))
+            <a href="{{ route('logs.index') }}" class="px-4 py-2 bg-gray-200 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-300 transition-colors flex items-center justify-center">
+                Reset
+            </a>
+        @endif
+    </form>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

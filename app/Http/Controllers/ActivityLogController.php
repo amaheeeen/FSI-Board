@@ -12,7 +12,20 @@ class ActivityLogController extends Controller
      */
     public function __invoke(Request $request)
     {
-        $logs = ActivityLog::with('user')->latest()->paginate(20);
-        return view('activity_logs.index', compact('logs'));
+        $query = ActivityLog::with('user');
+
+        if ($request->filled('admin_id')) {
+            $query->where('user_id', $request->admin_id);
+        }
+
+        if ($request->filled('action_type')) {
+            $query->where('action', $request->action_type);
+        }
+
+        $logs = $query->latest()->paginate(20);
+        $users = \App\Models\User::all(); // For filter dropdown
+        $actions = ['created', 'updated', 'deleted', 'login', 'logout']; // Common actions
+
+        return view('activity_logs.index', compact('logs', 'users', 'actions'));
     }
 }

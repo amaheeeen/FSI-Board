@@ -29,7 +29,7 @@ class Jamaah extends Authenticatable
     }
 
     public function mahram()
-    {
+    {                     
         return $this->belongsTo(Jamaah::class, 'mahram_id');
     }
 

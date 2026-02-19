@@ -11,12 +11,55 @@ use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Filter Parameters
+        $selectedMonth = $request->input('month', now()->month);
+        $selectedYear = $request->input('year', now()->year);
+
+        if ($request->ajax()) {
+            return response()->json($this->getChartData($selectedMonth, $selectedYear));
+        }
+
         $transactions = Transaction::with(['user', 'agent', 'package'])
             ->latest()
             ->paginate(10);
-        return view('transactions.index', compact('transactions'));
+            
+        $chartData = $this->getChartData($selectedMonth, $selectedYear);
+
+        return view('transactions.index', array_merge(compact('transactions'), $chartData));
+    }
+
+    private function getChartData($month, $year)
+    {
+        // Transaction Trend (Daily for Month view, or Monthly for Year view?)
+        // Let's stick to "Yearly View" = Monthly Breakdown, "Monthly View" = Daily breakdown?
+        // User just said "Time Filter".
+        // Let's implement logic: 
+        // If specific month is selected (standard view), show DAILY trend for that month.
+        // If "All Months"? No, filter is always set to something.
+        
+        // $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $daysInMonth = \Carbon\Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        $labels = [];
+        $data = [];
+        
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $date = \Carbon\Carbon::createFromDate($year, $month, $d)->format('Y-m-d');
+            $labels[] = $d; // Day number
+            
+            $dailyTotal = Transaction::whereDate('transaction_date', $date)
+                ->sum('total_amount');
+            $data[] = $dailyTotal;
+        }
+
+        return [
+            'chartLabels' => $labels,
+            'chartData' => $data,
+            'selectedMonth' => $month,
+            'selectedYear' => $year,
+            'chartTitle' => 'Daily Transaction Trend (' . date('F Y', mktime(0, 0, 0, $month, 1, $year)) . ')'
+        ];
     }
 
     public function create()
@@ -108,19 +151,102 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction)
     {
-        // Simple edit for status only for now
-        return view('transactions.edit', compact('transaction'));
+        $packages = Package::where('status', 'Open')->get();
+        // Include the current package even if it's not open, so it doesn't disappear
+        if (!$packages->contains($transaction->package)) {
+            $packages->push($transaction->package);
+        }
+        $agents = Agent::all();
+        return view('transactions.edit', compact('transaction', 'packages', 'agents'));
+    }
+
+    public function editPilgrims(Transaction $transaction)
+    {
+        $transaction->load('pilgrims.agent');
+        $agents = Agent::all();
+        return view('transactions.pilgrims-bulk-edit', compact('transaction', 'agents'));
     }
 
     public function update(Request $request, Transaction $transaction)
     {
-        $request->validate([
+        // Handle Bulk Pilgrim Update
+        if ($request->has('pilgrims')) {
+            $request->validate([
+                'pilgrims' => 'required|array',
+                'pilgrims.*.full_name' => 'required|string|max:255',
+                // Add other validations as needed, similar to PilgrimController
+            ]);
+
+            try {
+                DB::beginTransaction();
+
+                if (is_array($request->pilgrims)) {
+                    foreach ($request->pilgrims as $id => $data) {
+                        // Securely find pilgrim belonging to this transaction
+                        $pilgrim = Pilgrim::where('id', $id)
+                                          ->where('transaction_id', $transaction->id)
+                                          ->first();
+                        
+                        if ($pilgrim) {
+                            unset($data['id']); // Remove ID from data if present
+                            $pilgrim->update($data);
+                        }
+                    }
+                }
+
+                DB::commit();
+
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Pilgrims data updated successfully.'
+                    ], 200);
+                }
+
+                return back()->with('success', 'Pilgrims updated successfully.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Failed to update pilgrims: ' . $e->getMessage()
+                    ], 500);
+                }
+                
+                return back()->with('error', 'Failed to update pilgrims.');
+            }
+        }
+
+        // Handle Standard Transaction Details Update
+        $validated = $request->validate([
+            'package_id' => 'required|exists:packages,id',
+            'agent_id' => 'nullable|exists:agents,id',
+            'transaction_date' => 'required|date',
             'status' => 'required|in:Pending,Down Payment,Paid,Cancelled'
         ]);
 
-        $transaction->update(['status' => $request->status]);
+        try {
+            DB::beginTransaction();
 
-        return redirect()->route('transactions.show', $transaction)->with('success', 'Transaction status updated.');
+            // 1. Update Transaksi Utama
+            $transaction->update($validated);
+
+            // 2. Cascade Update ke seluruh Jamaah terkait (Business Rule: Satu Transaksi = Satu Agen)
+            if ($request->has('agent_id')) {
+                Pilgrim::where('transaction_id', $transaction->id)->update([
+                    'agent_id' => $request->agent_id
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->route('transactions.show', $transaction)->with('success', 'Transaksi dan data agen jamaah berhasil diperbarui.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors('Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     public function invoice(Transaction $transaction)

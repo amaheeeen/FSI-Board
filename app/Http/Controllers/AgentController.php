@@ -60,24 +60,38 @@ class AgentController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Agent $agent)
     {
-        //
+        return view('agents.edit', compact('agent'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Agent $agent)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'location' => 'nullable|string|max:255',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $agent->update($validated);
+
+        return redirect()->route('agents.index')->with('success', 'Agent updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Agent $agent)
     {
-        //
+        $agent->delete();
+        return redirect()->route('agents.index')->with('success', 'Agent deleted successfully.');
     }
 }

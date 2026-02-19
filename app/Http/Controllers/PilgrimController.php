@@ -151,27 +151,23 @@ class PilgrimController extends Controller
         $handle = fopen($file->getPathname(), 'r');
         $header = fgetcsv($handle); // Skip header
 
-        // Required columns based on export: Name, NIK, Passport Number, Gender, City, Agent Name (Optional but tricky to import by name, maybe ID is safer? Or skip for now)
-        // The modal says: Name, Passport, NIK, Gender, City, AgentID (ID is better for import)
+        // Required columns based on export: Name, NIK, Passport Number, Gender, City, AgentID
         
         while (($row = fgetcsv($handle)) !== false) {
              // Basic Check: row length
              if (count($row) < 5) continue;
 
-             // Map based on index (assuming modal order: Name, Passport, NIK, Gender, City, AgentID)
-             // 0: Name, 1: Passport, 2: NIK, 3: Gender, 4: City, 5: AgentID
              try {
                 Pilgrim::create([
                     'full_name' => $row[0],
                     'passport_number' => $row[1],
-                    'nik' => $row[2], // Should create NIK column if not exists? It exists in Model/DB.
+                    'nik' => $row[2], 
                     'gender' => $row[3],
                     'city' => $row[4],
                     'agent_id' => isset($row[5]) ? (int)$row[5] : null,
                 ]);
              } catch (\Exception $e) {
-                 // Skip invalid rows or log them. For now, continue.
-                 // Ideally collect errors and show them.
+                 // Skip invalid rows
                  continue;
              }
         }
@@ -179,5 +175,62 @@ class PilgrimController extends Controller
         fclose($handle);
 
         return redirect()->route('pilgrims.index')->with('success', 'Pilgrims imported successfully.');
+    }
+
+    /**
+     * Show the bulk edit form for selected pilgrims.
+     */
+    public function bulkEditSelection(Request $request)
+    {
+        $request->validate([
+            'selected_pilgrims' => 'required|array',
+            'selected_pilgrims.*' => 'exists:pilgrims,id',
+        ]);
+
+        $pilgrims = Pilgrim::whereIn('id', $request->selected_pilgrims)->with('agent')->get();
+        $agents = Agent::all();
+
+        return view('pilgrims.bulk-edit-selection', compact('pilgrims', 'agents'));
+    }
+
+    /**
+     * Update multiple pilgrims via bulk selection.
+     */
+    public function bulkUpdateSelection(Request $request)
+    {
+        $request->validate([
+            'pilgrims' => 'required|array',
+            'pilgrims.*.full_name' => 'required|string',
+             // Simple check, deeper validation can be done in loop or with custom rule if needed
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            if (is_array($request->pilgrims)) {
+                foreach ($request->pilgrims as $id => $data) {
+                    // $id is the key, $data is the array of fields
+                    
+                    // Security / cleanup: remove fields that shouldn't be mass updated if any
+                    // For now, we trust the fillable on the model
+                    
+                    // Ensure we are updating the correct record
+                    $pilgrim = Pilgrim::find($id);
+                    if ($pilgrim) {
+                        // Remove unnecessary keys like 'id' if they exist in data (though they are in key)
+                        unset($data['id']);
+                        
+                        $pilgrim->update($data);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Pilgrims updated successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error updating pilgrims: ' . $e->getMessage()], 500);
+        }
     }
 }

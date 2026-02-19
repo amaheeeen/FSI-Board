@@ -56,8 +56,14 @@
                 <td class="px-6 py-4">
                     <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
                 </td>
-                <td class="px-6 py-4 text-right">
-                    <a href="{{ route('agents.show', $agent->id) }}" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs uppercase tracking-wide">View Details</a>
+                <td class="px-6 py-4 text-right space-x-2">
+                    <a href="{{ route('agents.show', $agent->id) }}" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs uppercase tracking-wide">View</a>
+                    <a href="{{ route('agents.edit', $agent->id) }}" class="text-yellow-600 hover:text-yellow-800 font-bold text-xs uppercase tracking-wide">Edit</a>
+                    <form action="{{ route('agents.destroy', $agent->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this agent?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:text-red-800 font-bold text-xs uppercase tracking-wide">Delete</button>
+                    </form>
                 </td>
             </tr>
             @endforeach

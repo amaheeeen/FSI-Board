@@ -3,10 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FSI Board - Umrah & Hajj Management</title>
+    <title>FSI-Board | @yield('title', 'Dashboard')</title>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         [x-cloak] { display: none !important; }
         /* Claymorphism Utilities */
@@ -21,14 +22,29 @@
     </style>
 </head>
 <body class="h-full font-sans antialiased text-slate-700">
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex flex-col md:flex-row">
+    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex flex-col md:flex-row relative items-start">
         
+        <!-- Mobile Overlay -->
+        <div x-show="sidebarOpen" 
+             style="display: none;"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="sidebarOpen = false"
+             class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"></div>
+
         <!-- Sidebar (Floating Clay) -->
-        <aside class="w-full md:w-64 flex-shrink-0 flex flex-col transition-all duration-300 md:h-[calc(100vh-2rem)] md:m-4 bg-white rounded-3xl clay-sidebar sticky top-4 z-50 transform"
-               :class="{ '-ml-[17rem]': !sidebarOpen && window.innerWidth < 768 }">
+        <aside class="fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 md:translate-x-0 md:static md:h-screen md:sticky md:top-0 md:overflow-y-auto md:m-4 bg-white rounded-r-3xl md:rounded-3xl clay-sidebar flex flex-col"
+               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
             
             <div class="h-20 flex items-center justify-center border-b border-gray-100 px-4">
-                <span class="text-2xl font-bold text-emerald-600 tracking-wider">FSI BOARD</span>
+                <span class="text-2xl font-bold text-emerald-600 tracking-wider">FSI-BOARD</span>
+                <button @click="sidebarOpen = false" class="absolute right-4 md:hidden text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
 
             <nav class="flex-1 px-4 py-6 space-y-3 overflow-y-auto">
@@ -68,6 +84,11 @@
                 <a href="{{ route('finance.dashboard') }}" class="flex items-center px-4 py-3 rounded-2xl transition-all duration-200 {{ request()->routeIs('finance.dashboard') ? 'bg-emerald-50 text-emerald-700 shadow-inner font-bold' : 'text-gray-500 hover:text-emerald-600 hover:bg-gray-50' }}">
                     <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     Keuangan
+                </a>
+
+                <a href="{{ route('operational-costs.index') }}" class="flex items-center px-4 py-3 rounded-2xl transition-all duration-200 {{ request()->routeIs('operational-costs*') ? 'bg-emerald-50 text-emerald-700 shadow-inner font-bold' : 'text-gray-500 hover:text-emerald-600 hover:bg-gray-50' }}">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    Operational Costs
                 </a>
                 
                 <div class="pt-4 pb-2 px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -122,15 +143,16 @@
 
         <!-- Main Content -->
         <main class="flex-1 flex flex-col min-h-screen transition-all duration-300">
-            <!-- Mobile Header -->
-            <div class="md:hidden flex items-center justify-between bg-white border-b p-4 shadow-sm">
-                <span class="text-xl font-bold text-emerald-600">FSI BOARD</span>
-                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 focus:outline-none">
+            <!-- Mobile Header with Hamburger -->
+            <div class="md:hidden flex items-center justify-between bg-white border-b p-4 shadow-sm z-30 sticky top-0">
+                <span class="text-xl font-bold text-emerald-600">FSI-BOARD</span>
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 focus:outline-none p-2 rounded-lg hover:bg-gray-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
             </div>
 
-            <div class="p-6 md:p-8 flex-1 overflow-y-auto">
+            <!-- Responsive Padding -->
+            <div class="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto">
                 @yield('content')
             </div>
         </main>

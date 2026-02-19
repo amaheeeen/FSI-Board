@@ -57,6 +57,9 @@ class PackageController extends Controller
         // Standard usage: 9 Days Package -> Return on 9th day.
         $validated['return_date'] = $departure->copy()->addDays($days - 1);
         
+        // Auto-set available quota equal to total quota
+        // $validated['available_quota'] = $validated['quota']; // available_quota is dynamic accessors
+        
         Package::create($validated);
 
         return redirect()->route('packages.index')->with('success', 'Package created successfully.');
@@ -97,6 +100,13 @@ class PackageController extends Controller
         $departure = Carbon::parse($validated['departure_date']);
         $days = (int) $validated['duration_days'];
         $validated['return_date'] = $departure->copy()->addDays($days - 1);
+
+        // Adjust available_quota if quota changed - handled dynamically by accessor
+        // if ($package->quota != $validated['quota']) {
+        //     $diff = $validated['quota'] - $package->quota;
+        //     $package->available_quota += $diff;
+        //     $package->save(); 
+        // }
 
         $package->update($validated);
 
@@ -157,15 +167,19 @@ class PackageController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-
-
-    /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Package $package)
     {
-        //
+        // Soft Deletes is enabled on the model.
+        // This will mark it as deleted but keep the record for history.
+        
+        // Optional: Check if active transactions exist and warn?
+        // User requirement: "Cegah penghapusan fisik". Soft delete satisfies this.
+        // "Tolak penghapusan atau lakukan soft delete".
+        
+        $package->delete();
+
+        return redirect()->route('packages.index')->with('success', 'Package deleted successfully (Archived).');
     }
 }
